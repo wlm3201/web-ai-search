@@ -58,7 +58,7 @@ async function install(o) {
   console.log(`Installed web-ai-search skill to:\n  ${target}`);
 
   console.log('\nNext steps:');
-  console.log('  1. Put your logged-in AI sites in a bookmark-bar folder named "AI".');
+  console.log('  1. Log in to the AI sites in ego lite; the site list lives in <skill>/scripts/ego_sites.json.');
   console.log('  2. Read <skill>/SKILL.md and <skill>/references/ego-lite.md.');
   console.log('  3. Optional: python <skill>/scripts/ensure_proxy.py --check-only');
   return 0;

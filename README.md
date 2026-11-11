@@ -6,7 +6,7 @@ The package contains **documentation + local automation scripts only**. It does 
 
 ## Install on a new computer
 
-Requires Node.js 18+ (Python 3 optional, for the bookmark/proxy helpers).
+Requires Node.js 18+ (Python 3 optional, for the proxy helper).
 
 ```bash
 npx web-ai-search install
@@ -15,10 +15,9 @@ npx web-ai-search doctor
 
 This copies the skill to `~/.agents/skills/web-ai-search/` — the same user-level skills directory ego lite uses for its `ego-browser` skill, so any agent that reads `~/.agents/skills` can pick it up. Then:
 
-1. In your browser, log in to the AI sites you want to use.
-2. Put their links in a bookmark-bar folder named `AI`.
-3. Read `<skill>/SKILL.md` and `<skill>/references/ego-lite.md`.
-4. Use **ego lite** as the browser backend (the only supported backend).
+1. In ego lite, log in to the AI sites you want to use. The site list is built into `<skill>/scripts/ego_sites.json` (edit it to add or remove sites).
+2. Read `<skill>/SKILL.md` and `<skill>/references/ego-lite.md`.
+3. Use **ego lite** as the browser backend (the only supported backend).
 
 ## Commands
 
@@ -39,7 +38,7 @@ skill/references/sites.md       per-site controls and pitfalls
 skill/scripts/ego_ask_lib.mjs   ask/save/setPrompt: open, pass CF, toggle web, send, wait, extract
 skill/scripts/ego_sites.json    site list, priority, new-chat selectors, thinking levels
 skill/scripts/ego_*_example.mjs portable round/batch templates
-skill/scripts/*.py              bookmark reader, proxy check
+skill/scripts/ensure_proxy.py  optional proxy check
 ```
 
 ## Install from GitHub

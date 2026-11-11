@@ -1,13 +1,13 @@
 ---
 name: web-ai-search
-description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件夹中的站点）完成联网检索、事实核查与多模型交叉验证。当用户要求实时信息、用网页 AI 搜索、问多个 AI、开启联网/思考档位、过 Cloudflare 后拿回复，或本机搜索不如网页 AI 的 RAG/索引/缓存结果时使用。使用 ego lite 浏览器作为唯一后端；提供书签读取、CF 处理、联网开关、输入发送、流式结束判定与回复抓取工具链，以及站点专属配方。
+description: 让本地 AI 借用已登录的网页版 AI（内置站点清单）完成联网检索、事实核查与多模型交叉验证。当用户要求实时信息、用网页 AI 搜索、问多个 AI、开启联网/思考档位、过 Cloudflare 后拿回复，或本机搜索不如网页 AI 的 RAG/索引/缓存结果时使用。使用 ego lite 浏览器作为唯一后端；提供站点清单、CF 处理、联网开关、输入发送、流式结束判定与回复抓取工具链，以及站点专属配方。
 ---
 
 # Web AI Search
 
 ## Overview
 
-借用网页 AI 的联网检索、RAG、索引与缓存能力：打开书签栏 `AI` 文件夹里的站点（浏览器已登录），像真人一样加载页面、过 Cloudflare、设置联网与思考档位、输入并发送提示、等待流式输出结束、抓取最终回复与引用链接。
+借用网页 AI 的联网检索、RAG、索引与缓存能力：按内置清单 `scripts/ego_sites.json` 打开已登录的网页 AI，像真人一样加载页面、过 Cloudflare、设置联网与思考档位、输入并发送提示、等待流式输出结束、抓取最终回复与引用链接。
 
 本 skill **只使用 ego lite 浏览器**：它没有 `--enable-automation` 指纹，Cloudflare Turnstile 复选框可以用真实点击通过，且复用你已登录的浏览器 profile。所有脚本都基于 ego-browser 的 `nodejs` / `page` API。
 
@@ -22,8 +22,8 @@ description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件�
 
 安装后 skill 默认位于 `~/.agents/skills/web-ai-search`——与 ego lite 的 `ego-browser` skill 使用同一个用户级 skills 目录，Claude Code / Codex / Cursor 或任何会读取 `~/.agents/skills` 的 agent 都能直接使用（下文用 `<SKILL>` 表示，可用 `npx web-ai-search install --target <dir>` 改）。
 
-1. **站点清单**：在浏览器书签栏建一个 `AI` 文件夹，把要用的网页 AI 放进去并登录好。运行 `python <SKILL>/scripts/read_ai_bookmarks.py --folder AI` 取 URL；也可用 `--user-data-dir <dir>` 指定 profile。不要硬编码站点清单。
-2. **登录态**：cookie 属于各自的浏览器 profile。不要清理/重建 profile、不要 `isolatedContext`、不要改 UA，否则会掉登录或触发风控。
+1. **站点清单**：只以 `<SKILL>/scripts/ego_sites.json` 为准（站点 URL、调用优先级、新会话方式、档位与抓取配置都在里面）。要增删站点直接改这个 JSON。
+2. **登录态**：cookie 属于 ego lite 的浏览器 profile。不要清理/重建 profile、不要 `isolatedContext`、不要改 UA，否则会掉登录或触发风控。
 3. **可选代理**：浏览器需要代理时，先跑 `python <SKILL>/scripts/ensure_proxy.py --check-only`；脚本支持 `--port`（默认 7897）与 `--verify`。Windows 下若代理端口在监听但系统代理未开，`--verify` 会尝试自动开启并验证出口；其他平台请在系统/浏览器里设置。
 4. **ego lite**：先运行 `ego-browser skill` 读当前版本指南；PowerShell 下把任务写成 UTF-8 `.mjs` 文件，用 `ego-browser nodejs -e "await import('file:///<绝对路径>/round.mjs')"` 调用。
 
@@ -52,7 +52,7 @@ description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件�
 
 ## 2. 标准工作流（ego lite 后端）
 
-1. **准备**：读书签 → 看 `references/sites.md` → 建一个 TaskSpace（打印 `spaceId`，全程复用）。
+1. **准备**：读 `ego_sites.json` 取站点 → 看 `references/sites.md` → 建一个 TaskSpace（打印 `spaceId`，全程复用）。
 2. **开页**：每站一个 Page（建议 `p1`…`p5`），`goto` + `waitForLoadState` + 等编辑器出现。
 3. **过 CF**：若停在安全验证页，`page.snapshot()` 找 iframe 内的 `checkbox "请验证您是真人" [ref=N]` → `page.click('@N')` → 等编辑器出现。不要刷新循环，也不要用 JS 模拟点击。
 4. **诊断**：`page.evaluate` 收集输入框、composer 附近按钮、登录/CF 状态。`scripts/ego_ask_lib.mjs` 的 `ask()` 封装了 2–8 步。
@@ -65,7 +65,6 @@ description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件�
 
 | 文件 | 用途 |
 | --- | --- |
-| `read_ai_bookmarks.py` | 读取 `AI` 书签与 profile 路径（跨平台探测） |
 | `ego_ask_lib.mjs` | ego lite 主力：`ask(page, site)`、`save()`、`setPrompt()`、`setOutDir()` |
 | `ego_round_example.mjs` | 单站 round 模板，可复制到任意目录 |
 | `ego_batch_example.mjs` | 按优先级 5 页一批跑完站点清单 |
