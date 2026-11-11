@@ -479,6 +479,23 @@ export async function ask(page, site) {
       } catch (_) { }
     }
     r.landing = await page.evaluate(landing);
+    if (r.landing.notLoggedIn) {
+      // Some sites briefly render a "登录 / 注册" shell while the session
+      // hydrates. Wait for the real UI before treating it as a login wall.
+      try {
+        await page.waitForFunction(() => {
+          const t = document.body ? document.body.innerText.slice(0, 1200) : '';
+          if (/模型加载中|正在加载|loading/i.test(t)) return false;
+          const cta = [...document.querySelectorAll('button,[role="button"]')]
+            .filter(e => e.getBoundingClientRect().width > 0)
+            .some(e => /^(登录|注册|立即登录|Sign in|Log in|Sign up)$/i.test((e.innerText || '').trim()));
+          return !cta;
+        }, undefined, { timeout: 8000, polling: 400 });
+      } catch (_) { }
+      const recheck = await page.evaluate(landing);
+      r.loginRecheck = { head: recheck.head.slice(0, 120), bodyChars: recheck.bodyChars, notLoggedIn: recheck.notLoggedIn };
+      r.landing = recheck;
+    }
     if (!r.landing.hasEditor) {
       if (r.landing.cf || /请稍候|安全验证/i.test(r.landing.title + r.landing.head)) {
         const ok = await clearCloudflare(page, r);
@@ -670,6 +687,8 @@ export async function ask(page, site) {
     const hasAnswerSignal = /https?:\/\/|来源|Sources|参考\s*\d+\s*篇|版本|结论|安装|已读取|已核实|查证/i.test(aText) || aLinks.length > 0;
     r.answerQuality.hasAnswerSignal = hasAnswerSignal;
     r.webEvidence = (r.answer && r.answer.webEvidence) || null;
+    if (r.webEvidence && r.webEvidence.textLinks && r.webEvidence.textLinks.length
+        && /not-found|menu-no-item/.test(r.webAction || '')) r.webAction = 'evidence-only';
     const uiOnly = r.answerQuality.chars > 0 && r.answerQuality.chars < 80 && /输入消息|发送消息|继续问|选择项目|登录|注册|我知道了|去升级/.test(aText);
     const rateLimited = /使用人数较多|请稍后再试|rate limit|高峰时段|订阅.*优先|升级.*优先|too many requests/i.test(aText);
     if (r.answerQuality.chars === 0) r.status = 'blocked-no-answer';

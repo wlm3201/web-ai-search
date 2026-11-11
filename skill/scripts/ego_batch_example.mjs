@@ -55,7 +55,7 @@ for (let i = 0; i < sites.length; i += 5) {
     rows: results.map(r => ({
       site: r.site, status: r.status, durationMs: r.durationMs,
       wait: r.waitStatus, chars: r.answer && r.answer.chars,
-      webAction: r.webAction, webEvidence: r.webEvidence && r.webEvidence.sourceCards,
+      webAction: r.webAction, webEvidence: r.webEvidence && { sources: r.webEvidence.sourceCards, links: r.webEvidence.textLinks.length },
       error: r.error,
     })),
   }, null, 2));

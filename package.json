@@ -1,6 +1,6 @@
 {
   "name": "web-ai-search",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Agent skill that lets any local AI agent drive logged-in web AI chat sites with ego lite for online search, fact-checking and cross-model answers.",
   "type": "module",
   "bin": {
