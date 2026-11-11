@@ -50,12 +50,12 @@ skill/scripts/*.py              bookmark reader, proxy check, MCP tool sync
 Once the source repository is pushed, no npm publish is required:
 
 ```bash
-npx github:OWNER/web-ai-search install
+npx github:wlm3201/web-ai-search install
 # or
-npm i -g github:OWNER/web-ai-search
+npm i -g github:wlm3201/web-ai-search
 ```
 
-Replace `OWNER` with your GitHub account name. A private repository requires git credentials on the new machine.
+For a fork, replace the account name. A private repository requires git credentials on the new machine.
 
 ## Offline / pre-release install
 
