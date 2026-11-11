@@ -11,8 +11,6 @@ Usage:
     python ensure_proxy.py --verify       # also request a 204 endpoint through the proxy
     python ensure_proxy.py --port 7890
 
-For the chrome-devtools MCP backend, an alternative browser-level hard-code is
-adding "--proxyServer=http://127.0.0.1:7897" to its args in mcp.json.
 """
 
 from __future__ import annotations
@@ -125,7 +123,6 @@ def main() -> int:
         if not result["verify"].get("ok"):
             result["ok"] = False
             result["warnings"].append("Proxy verification request failed; check Clash rules / upstream.")
-    result["mcp_backend_hint"] = 'Add "--proxyServer=http://127.0.0.1:' + str(args.port) + '" to chrome-devtools-mcp args for a browser-level hard-code.'
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["ok"] else 1
 

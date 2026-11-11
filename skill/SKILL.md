@@ -1,6 +1,6 @@
 ---
 name: web-ai-search
-description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件夹中的站点）完成联网检索、事实核查与多模型交叉验证。当用户要求实时信息、用网页 AI 搜索、问多个 AI、开启联网/思考档位、过 Cloudflare 后拿回复，或本机搜索不如网页 AI 的 RAG/索引/缓存结果时使用。首选 ego lite 浏览器，chrome-devtools MCP 为备选后端；提供书签读取、CF 处理、联网开关、输入发送、流式结束判定与回复抓取工具链，以及站点专属配方。
+description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件夹中的站点）完成联网检索、事实核查与多模型交叉验证。当用户要求实时信息、用网页 AI 搜索、问多个 AI、开启联网/思考档位、过 Cloudflare 后拿回复，或本机搜索不如网页 AI 的 RAG/索引/缓存结果时使用。使用 ego lite 浏览器作为唯一后端；提供书签读取、CF 处理、联网开关、输入发送、流式结束判定与回复抓取工具链，以及站点专属配方。
 ---
 
 # Web AI Search
@@ -9,10 +9,7 @@ description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件�
 
 借用网页 AI 的联网检索、RAG、索引与缓存能力：打开书签栏 `AI` 文件夹里的站点（浏览器已登录），像真人一样加载页面、过 Cloudflare、设置联网与思考档位、输入并发送提示、等待流式输出结束、抓取最终回复与引用链接。
 
-| 后端 | 适用 | 说明 |
-| --- | --- | --- |
-| **ego lite（首选）** | 常规检索、尤其有 CF 的站点 | 无 `--enable-automation` 指纹，Turnstile 复选框可用真实点击通过 |
-| chrome-devtools MCP（备选） | 已配置好 MCP、需要其原生工具时 | 启动参数含 `--enable-automation`，`sourcePath` 只允许工作区内路径 |
+本 skill **只使用 ego lite 浏览器**：它没有 `--enable-automation` 指纹，Cloudflare Turnstile 复选框可以用真实点击通过，且复用你已登录的浏览器 profile。所有脚本都基于 ego-browser 的 `nodejs` / `page` API。
 
 **核心原则**：真人式交互（真实点击、原生粘贴、键盘回车）；页面内 JS 只做诊断与判定；DOM 变化快，硬编码选择器只是提示，以当次诊断为准。
 
@@ -28,8 +25,7 @@ description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件�
 1. **站点清单**：在浏览器书签栏建一个 `AI` 文件夹，把要用的网页 AI 放进去并登录好。运行 `python <SKILL>/scripts/read_ai_bookmarks.py --folder AI` 取 URL；也可用 `--user-data-dir <dir>` 指定 profile。不要硬编码站点清单。
 2. **登录态**：cookie 属于各自的浏览器 profile。不要清理/重建 profile、不要 `isolatedContext`、不要改 UA，否则会掉登录或触发风控。
 3. **可选代理**：浏览器需要代理时，先跑 `python <SKILL>/scripts/ensure_proxy.py --check-only`；脚本支持 `--port`（默认 7897）与 `--verify`。Windows 下若代理端口在监听但系统代理未开，`--verify` 会尝试自动开启并验证出口；其他平台请在系统/浏览器里设置。
-4. **MCP 后端**：`sourcePath` 只允许工作区内路径，先 `python <SKILL>/scripts/sync_tools.py --workspace <工作区>`，再用相对路径 `.web-ai-search/ai_lib.js`。
-5. **ego lite 后端**：先运行 `ego-browser skill` 读当前版本指南；PowerShell 下把任务写成 UTF-8 `.mjs` 文件，用 `ego-browser nodejs -e "await import('file:///<绝对路径>/round.mjs')"` 调用。
+4. **ego lite**：先运行 `ego-browser skill` 读当前版本指南；PowerShell 下把任务写成 UTF-8 `.mjs` 文件，用 `ego-browser nodejs -e "await import('file:///<绝对路径>/round.mjs')"` 调用。
 
 ## 1. 站点路由与调用优先级
 
@@ -65,8 +61,6 @@ description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件�
 7. **等流式结束**：答案文本稳定 ≥3s + 停止按钮消失；单次上限约 150s，未完成再开一轮检查。
 8. **抓回复**：从新对话开始，抓取时在**活动 DOM** 上临时隐藏左侧窄栏与 `script/style`，读 `body.innerText` 后恢复（不要用 detached clone，`innerText` 会为空）；按 `answerFrom` 定位提示文本、用尾部标记截断，剥离明确标注的思考段，收集来源链接。`answerQuality` 给出锚点/噪声/清理诊断，结果写 JSON 文件，stdout 只打印精简摘要。
 
-MCP 后端的等价流程见 `references/common.md`。
-
 ## 3. 工具包（`<SKILL>/scripts/`）
 
 | 文件 | 用途 |
@@ -77,13 +71,11 @@ MCP 后端的等价流程见 `references/common.md`。
 | `ego_batch_example.mjs` | 按优先级 5 页一批跑完站点清单 |
 | `ego_sites.json` | 站点配置：URL、优先级、新会话、档位、答案切分 |
 | `ensure_proxy.py` | 代理端口检查 / 可选自动开启系统代理 |
-| `sync_tools.py` | MCP 后端：把页面内 JS 工具同步进工作区 |
-| `ai_lib.js` / `ai_toggles.js` / `ai_send.js` / `ai_wait.js` / `ai_reply.js` | MCP 后端页面内工具 |
 
 ## 4. 注意事项
 
 - **页面内函数必须自包含**：`page.evaluate(fn)` 序列化时不带 Node 侧闭包；辅助函数要定义在页面函数内部，否则 `ReferenceError`。
-- **每次导航后重新注入/重设状态**：发送后新建会话常触发导航，window 重建，注入的库与等待状态会丢。
+- **每次导航后重新注入/重设状态**：发送后新建会话常触发导航，window 重建，`window.__egoWait` 等页面内状态会丢。
 - **CF 只真点**：Turnstile 在跨域 iframe，JS `element.click()` 无效。
 - **回复抓取别只信容器**：部分站点 DOM 抓不到答案，用清理后的正文回退；答案可能在末尾输入框提示文本之前。
 - **思考段**：只剥离站点明确标注为思考/检索过程的段落；未标注时保留全文。
@@ -94,5 +86,4 @@ MCP 后端的等价流程见 `references/common.md`。
 ## Resources
 
 - `references/ego-lite.md`：ego lite 完整操作指南（首选后端必读）。
-- `references/common.md`：MCP 后端流程、工具速查、故障表、并发与安全边界。
 - `references/sites.md`：站点清单、控件速查与专属注意事项。

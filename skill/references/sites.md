@@ -21,7 +21,7 @@
 
 ## 通用坑
 
-- 站点卡里的按钮名只是常见形态；一律以当次 `page.evaluate` 诊断或 `take_snapshot` 为准。
+- 站点卡里的按钮名只是常见形态；一律以当次 `page.evaluate` 诊断或 `page.snapshot()` 为准。
 - 不要在汇总里声称已开启联网，除非开关点击成功或按钮状态可见变化；默认联网站点标注「默认联网」。
 - 答案抓取先看 `answerQuality`：锚点未命中、脚本噪声、侧栏历史混入时按正文复核，不要整段引用。
 - 复杂问题可在 round 脚本里覆盖 `site.thinkLevel` 或替换 `site.clickSequence`，不需要改 skill 文件。

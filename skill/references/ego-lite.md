@@ -56,8 +56,7 @@
 - 结果文件命名 `round-XX.json` / `batch-N.json`，便于汇总回溯。
 - 成功且结果已落盘后：`await task.finish({keep:[]})` 只调一次；失败时保留空间供下一轮恢复。
 
-## 8. 与 MCP 后端的取舍
+## 8. 后端说明
 
-- 新任务默认 ego lite；需要 MCP 原生工具时按 `common.md` 走 `sync_tools.py` + 页面内注入流程。
-- 两个后端登录态互不共享，各自使用自己的浏览器 profile。
-- 无论哪个后端都不要清理 profile、不要 `isolatedContext`、不要改 UA。
+- 本 skill 只使用 ego lite，所有页面操作都通过 `ego-browser nodejs` 的 `page` API 完成。
+- 不要清理 profile、不要 `isolatedContext`、不要改 UA，否则会丢登录态或触发风控。

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read the "AI" bookmarks folder from the Chrome profile used by chrome-devtools-mcp.
+"""Read the "AI" bookmarks folder from a Chromium-family browser profile.
 
 The profile holds BOTH the bookmarks and the logged-in cookies. Never copy, clean or
 re-create this directory: doing so logs every AI site out.
@@ -25,15 +25,14 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 HOME = Path.home()
-CACHE_PROFILE = HOME / ".cache" / "chrome-devtools-mcp" / "chrome-profile"
+FALLBACK_PROFILE = HOME / ".config" / "web-ai-search" / "profile"
 
 
 def default_candidates() -> list[Path]:
     local = HOME / "AppData" / "Local"
     mac = HOME / "Library" / "Application Support"
     return [
-        Path(os.environ["CHROME_DEVTOOLS_MCP_PROFILE"]) if os.environ.get("CHROME_DEVTOOLS_MCP_PROFILE") else CACHE_PROFILE,
-        CACHE_PROFILE,
+        Path(os.environ["WAS_BOOKMARK_PROFILE"]) if os.environ.get("WAS_BOOKMARK_PROFILE") else FALLBACK_PROFILE,
         local / "Google" / "Chrome" / "User Data",
         local / "Microsoft" / "Edge" / "User Data",
         local / "Chromium" / "User Data",
@@ -43,13 +42,12 @@ def default_candidates() -> list[Path]:
 
 
 def detect_running_profile() -> Path | None:
-    """Find --user-data-dir of the chrome-devtools-mcp-launched Chrome process."""
+    """Find --user-data-dir of a running Chromium-family browser."""
     try:
         if sys.platform == "win32":
             ps = (
                 "Get-CimInstance Win32_Process -Filter \"name = 'chrome.exe'\" | "
-                "Where-Object { $_.CommandLine -like '*chrome-devtools-mcp*' "
-                "-or $_.CommandLine -like '*remote-debugging-pipe*' } | "
+                "Where-Object { $_.CommandLine -like '*--user-data-dir*' } | "
                 "Select-Object -First 5 -ExpandProperty CommandLine"
             )
             out = subprocess.run(
@@ -60,7 +58,7 @@ def detect_running_profile() -> Path | None:
             out = subprocess.run(
                 ["ps", "-eo", "args"], capture_output=True, text=True, timeout=12
             ).stdout
-            out = "\n".join(l for l in out.splitlines() if "chrome-devtools-mcp" in l or "remote-debugging-pipe" in l)
+            out = "\n".join(l for l in out.splitlines() if "--user-data-dir" in l)
         m = re.search(r'--user-data-dir=(?:"([^"]+)"|([^\s]+))', out)
         if m:
             return Path(m.group(1) or m.group(2))
@@ -81,7 +79,7 @@ def resolve_profile(explicit: str | None) -> tuple[Path, str]:
     for c in default_candidates():
         if c.exists():
             return c, "existing profile (no Default/Bookmarks yet)"
-    return CACHE_PROFILE, "fallback (not found)"
+    return FALLBACK_PROFILE, "fallback (not found)"
 
 
 def bookmarks_file(profile: Path) -> Path | None:
@@ -114,7 +112,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--folder", default="AI", help="bookmark folder name (case-insensitive), default: AI")
     ap.add_argument("--only", default="", help="keep only sites whose name/url contains this text")
-    ap.add_argument("--user-data-dir", default=None, help="explicit chrome-devtools-mcp user data dir")
+    ap.add_argument("--user-data-dir", default=None, help="explicit browser user data dir")
     ap.add_argument("--list-folders", action="store_true", help="list all bookmark folders instead of sites")
     args = ap.parse_args()
 
@@ -133,7 +131,7 @@ def main() -> int:
     }
     if not bm:
         result["warnings"].append(
-            "No Bookmarks file in this profile. Launch the MCP browser, log in to the AI sites, "
+            "No Bookmarks file in this profile. Open your browser, log in to the AI sites, "
             "and create a bookmark folder named AI in its bookmark bar."
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))

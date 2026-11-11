@@ -18,7 +18,7 @@ This copies the skill to `~/.agents/skills/web-ai-search/` — the same user-lev
 1. In your browser, log in to the AI sites you want to use.
 2. Put their links in a bookmark-bar folder named `AI`.
 3. Read `<skill>/SKILL.md` and `<skill>/references/ego-lite.md`.
-4. Use a browser backend: **ego lite** (recommended) or **chrome-devtools MCP**.
+4. Use **ego lite** as the browser backend (the only supported backend).
 
 ## Commands
 
@@ -26,7 +26,6 @@ This copies the skill to `~/.agents/skills/web-ai-search/` — the same user-lev
 | --- | --- |
 | `npx web-ai-search install` | Install the skill into the default user-level skills directory |
 | `npx web-ai-search install --target <dir>` | Install into a custom directory |
-| `npx web-ai-search install --workspace <dir>` | Also sync MCP page-side JS tools into `<dir>/.web-ai-search` (MCP `sourcePath` is workspace-scoped) |
 | `npx web-ai-search install --force` | Overwrite an existing installation |
 | `npx web-ai-search doctor` | Report Node/Python/browser-tool availability and install paths |
 | `npx web-ai-search --help` / `--version` | Help / version |
@@ -36,13 +35,11 @@ This copies the skill to `~/.agents/skills/web-ai-search/` — the same user-lev
 ```
 skill/SKILL.md                  main workflow, routing, call priority
 skill/references/ego-lite.md    ego lite backend guide
-skill/references/common.md      chrome-devtools MCP backend guide
 skill/references/sites.md       per-site controls and pitfalls
 skill/scripts/ego_ask_lib.mjs   ask/save/setPrompt: open, pass CF, toggle web, send, wait, extract
 skill/scripts/ego_sites.json    site list, priority, new-chat selectors, thinking levels
 skill/scripts/ego_*_example.mjs portable round/batch templates
-skill/scripts/ai_*.js           page-side tools for the MCP backend
-skill/scripts/*.py              bookmark reader, proxy check, MCP tool sync
+skill/scripts/*.py              bookmark reader, proxy check
 ```
 
 ## Install from GitHub
@@ -76,7 +73,7 @@ npx web-ai-search install
 
 ## Uninstall
 
-Delete the install directory (default `~/.agents/skills/web-ai-search`) and, if used, `<workspace>/.web-ai-search`.
+Delete the install directory (default `~/.agents/skills/web-ai-search`).
 
 ## License
 
