@@ -1,12 +1,13 @@
 {
-  "prompt": "请联网搜索并用一句话说明 Node.js LTS 是什么，给出官方下载页链接。",
-  "notes": "sites 数组顺序即调用优先级，priority 为显式编号；可按需要调整顺序、档位与站点清单。clickSequence 支持 sel / text / slider:low；$thinkLevel 由 site.thinkLevel 覆盖。",
+  "prompt": "请联网搜索：所用编程语言的最新稳定版本是什么？请给出官方来源链接，并写出一条安装命令。",
+  "notes": "sites 数组顺序即调用优先级，priority 为显式编号。换题/选站点/改等待用同目录的 run.json 覆盖，不必改本文件。defaultWeb 表示该站默认联网；clickSequence 支持 sel / text / slider:low；$thinkLevel 由 site.thinkLevel 覆盖；waitMs / stableMs 可按站覆盖。",
   "sites": [
     {
       "id": "perplexity",
       "priority": 1,
       "url": "https://www.perplexity.ai/",
-      "newChatUrl": "https://www.perplexity.ai/"
+      "newChatUrl": "https://www.perplexity.ai/",
+      "defaultWeb": true
     },
     {
       "id": "chatgpt",
@@ -25,18 +26,18 @@
       "id": "grok",
       "priority": 4,
       "url": "https://grok.com/",
-      "newChatUrl": "https://grok.com/"
+      "newChatUrl": "https://grok.com/",
+      "defaultWeb": true
     },
     {
       "id": "muse",
       "priority": 5,
       "url": "https://muse.ai/",
       "freshClick": true,
-      "newChatText": [
-        "新旁聊"
-      ],
+      "newChatText": ["新旁聊"],
       "freshWaitText": "新旁聊",
-      "freshInSidebar": true
+      "freshInSidebar": true,
+      "defaultWeb": true
     },
     {
       "id": "claude",
@@ -70,16 +71,9 @@
       "url": "https://www.stepfun.com/chats/new",
       "newChatUrl": "https://www.stepfun.com/chats/new",
       "answerFrom": "before-first",
-      "answerStartMarks": [
-        "截至",
-        "最新 LTS",
-        "Node.js",
-        "版本"
-      ],
+      "answerStartMarks": ["截至", "最新", "版本", "结论", "官方来源"],
       "forceWeb": true,
-      "forceWebText": [
-        "搜索"
-      ]
+      "forceWebText": ["搜索"]
     },
     {
       "id": "zai",
@@ -88,15 +82,9 @@
       "newChatUrl": "https://zchat.z.ai/",
       "minCleanChars": 300,
       "clickSequence": [
-        {
-          "sel": "button.modelSelectorButton"
-        },
-        {
-          "text": "GLM-5.3-Flash"
-        },
-        {
-          "slider": "low"
-        }
+        { "sel": "button.modelSelectorButton" },
+        { "text": "GLM-5.3-Flash" },
+        { "slider": "low" }
       ]
     },
     {
@@ -104,28 +92,23 @@
       "priority": 12,
       "url": "https://aistudio.tencent.com/",
       "freshClick": true,
-      "newChatText": [
-        "新建会话",
-        "新对话",
-        "开启新对话",
-        "新建对话"
-      ],
+      "newChatText": ["新建会话", "新对话", "开启新对话", "新建对话"],
       "freshInSidebar": true,
       "forceWeb": true,
       "minCleanChars": 300,
       "clickSequence": [
-        {
-          "sel": "span.paint-button-value"
-        },
-        {
-          "text": "No Think"
-        }
+        { "sel": "span.paint-button-value" },
+        { "text": "No Think" }
       ]
     },
     {
       "id": "mimo",
       "priority": 13,
-      "url": "https://aistudio.xiaomimimo.com/#/"
+      "url": "https://aistudio.xiaomimimo.com/#/",
+      "freshClick": true,
+      "newChatText": ["新对话"],
+      "freshInSidebar": true,
+      "defaultWeb": true
     },
     {
       "id": "kimi",
@@ -136,15 +119,9 @@
       "sendRetry": true,
       "thinkLevel": "标准",
       "clickSequence": [
-        {
-          "sel": "[data-testid=\"model-select-trigger\"]"
-        },
-        {
-          "sel": "button.effort-item"
-        },
-        {
-          "text": "$thinkLevel"
-        }
+        { "sel": "[data-testid=\"model-select-trigger\"]" },
+        { "sel": "button.effort-item" },
+        { "text": "$thinkLevel" }
       ]
     }
   ]

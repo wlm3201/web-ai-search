@@ -6,10 +6,15 @@
  * All page.evaluate callbacks are self-contained: ego-browser serializes them
  * without Node-side closures.
  */
+import os from 'node:os';
+import path from 'node:path';
+
 const { writeFile, mkdir } = await import('node:fs/promises');
 
-export let OUT_DIR = 'web-ai-search-runs';
-export let PROMPT = '请联网搜索并用一句话说明 Node.js LTS 是什么，给出官方下载页链接。';
+// The ego-browser nodejs process can start in a read-only install directory,
+// so never default to a relative path resolved against process.cwd().
+export let OUT_DIR = path.join(os.tmpdir(), 'web-ai-search-runs');
+export let PROMPT = '请联网搜索：所用编程语言的最新稳定版本是什么？请给出官方来源链接，并写出一条安装命令。';
 export function setOutDir(d) { OUT_DIR = d; }
 export function setPrompt(p) { PROMPT = p; }
 
@@ -28,16 +33,27 @@ const vis = e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.
 const lab = e => [e.getAttribute('aria-label'), e.getAttribute('title'), e.getAttribute('data-testid'), e.getAttribute('placeholder'), e.innerText]
   .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 
-const landing = () => ({
-  title: document.title,
-  url: location.href,
-  head: (document.body ? document.body.innerText : '').slice(0, 220),
-  hasEditor: !!document.querySelector('textarea,[contenteditable="true"]'),
-  editors: [...document.querySelectorAll('textarea,[contenteditable="true"]')].filter(e => e.getBoundingClientRect().width > 0).length,
-  cf: /请稍候|正在进行安全验证|just a moment|verify you are human|checking your browser|attention required/i.test(
-    document.title + (document.body ? document.body.innerText.slice(0, 400) : '')),
-  iframes: [...document.querySelectorAll('iframe')].map(f => f.src).slice(0, 5),
-});
+const landing = () => {
+  const body = document.body ? document.body.innerText : '';
+  const head = body.slice(0, 1200);
+  const loginWords = /登录|注册|Sign in|Log in|Sign up|立即登录|登录后可使用/i.test(head);
+  const chatEditor = [...document.querySelectorAll('textarea,[contenteditable="true"]')]
+    .some(e => /消息|输入|问|prompt|ask|chat/i.test((e.getAttribute('placeholder') || '') + ' ' + (e.getAttribute('aria-label') || '')));
+  const hasNewChat = /新对话|新旁聊|新建会话|New chat|新建聊天/i.test(head);
+  const welcomeOnly = body.length < 2500 && !/历史|会话记录|最近|消息记录/.test(head);
+  return {
+    title: document.title,
+    url: location.href,
+    head: head.slice(0, 220),
+    bodyChars: body.length,
+    notLoggedIn: loginWords && welcomeOnly && !chatEditor && !hasNewChat,
+    hasEditor: !!document.querySelector('textarea,[contenteditable="true"]'),
+    editors: [...document.querySelectorAll('textarea,[contenteditable="true"]')].filter(e => e.getBoundingClientRect().width > 0).length,
+    cf: /请稍候|正在进行安全验证|just a moment|verify you are human|checking your browser|attention required/i.test(
+      document.title + body.slice(0, 400)),
+    iframes: [...document.querySelectorAll('iframe')].map(f => f.src).slice(0, 5),
+  };
+};
 
 const composer = () => {
   const eds = [...document.querySelectorAll('textarea,[contenteditable="true"]')].filter(e => e.getBoundingClientRect().width > 0);
@@ -150,7 +166,7 @@ const answerText = (cfg) => {
   const idx = body.lastIndexOf(cfg.prompt);
   let tail = idx >= 0 ? body.slice(idx + cfg.prompt.length) : body.slice(-5000);
   tail = tail.replace(/^\s*(ChatGPT 说|助手|回答|Assistant|AI)[:：]?\s*/i, '');
-  const marks = ['ChatGPT 可能会出错', '回答已完成', '重新生成', '复制代码', '可能会出错。请核查', '最新一条回复', '个来源', '提出后续问题', 'Cookie 政策', 'Pro 已启用', '追问', '相关问题', '由 Step'];
+  const marks = ['ChatGPT 可能会出错', '回答已完成', '重新生成', '复制代码', '可能会出错。请核查', '最新一条回复', '提出后续问题', 'Cookie 政策', 'Pro 已启用', '追问', '相关问题', '由 Step', '内容由AI生成', '以上内容均由', '继续问，消息会排队发送', '和Kimi聊天的人太多了', '探索灵感', '模型介绍', '选择项目', '输入消息', '发送消息', '登录/注册', '我知道了', '去升级', '思考 TPS', '输出 TPS'];
   let cut = tail.length;
   for (const m of marks) { const i = tail.indexOf(m); if (i > 40 && i < cut) cut = i; }
   return tail.slice(0, cut).trim();
@@ -188,7 +204,7 @@ const checkDone = (cfg) => {
     window.__egoAnchor = { found: idx >= 0, from, idx };
     if (idx >= 0 && from === 'before-first') {
       const cand = [...document.querySelectorAll('[class*="message"],[class*="markdown"],[class*="answer"],article')]
-        .filter(e => e.getBoundingClientRect().width > 0 && /LTS|nvm|Node\.js|版本/i.test(e.innerText || '') && (e.innerText || '').trim().length > 40 && !(e.innerText || '').includes(c.prompt));
+        .filter(e => e.getBoundingClientRect().width > 0 && /版本|来源|官方|https?:\/\/|安装|结论|截至|\d+\.\d+|参考/i.test(e.innerText || '') && (e.innerText || '').trim().length > 40 && !(e.innerText || '').includes(c.prompt));
       const last = cand[cand.length - 1];
       let pre = body.slice(Math.max(0, idx - 1600), idx);
       const marks = c.startMarks || [];
@@ -205,12 +221,13 @@ const checkDone = (cfg) => {
       tail = last ? (last.innerText || '').trim() : '';
     }
     tail = tail.replace(/^\s*(ChatGPT 说|助手|回答|Assistant|AI)[:：]?\s*/i, '');
-    const marks = ['ChatGPT 可能会出错', '回答已完成', '重新生成', '复制代码', '可能会出错。请核查', '最新一条回复', '个来源', '提出后续问题', 'Cookie 政策', 'Pro 已启用', '追问', '相关问题', '由 Step'];
+    const marks = ['ChatGPT 可能会出错', '回答已完成', '重新生成', '复制代码', '可能会出错。请核查', '最新一条回复', '提出后续问题', 'Cookie 政策', 'Pro 已启用', '追问', '相关问题', '由 Step', '内容由AI生成', '以上内容均由', '继续问，消息会排队发送', '和Kimi聊天的人太多了', '探索灵感', '模型介绍', '选择项目', '输入消息', '发送消息', '登录/注册', '我知道了', '去升级', '思考 TPS', '输出 TPS'];
     let cut = tail.length;
     for (const m of marks) { const i = tail.indexOf(m); if (i > 40 && i < cut) cut = i; }
     let out = tail.slice(0, cut).trim();
+    out = out.split('\n').filter((l, i, arr) => !(i >= arr.length - 6 && l.trim().length <= 6 && /^(消息|发送|快速|进阶|复制|分享|Muse|登录|注册|Claude|Kimi)$/i.test(l.trim()))).join('\n').trim();
     const stripThinking = (t) => {
-      const starts = [/已深度思考（用时[^）]*）/, /已思考（用时[^）]*）/, /思考过程[:：]?/, /已使用 web_search/, /搜索到 \d+ 个网页/, /搜索 \d+ 个网页/, /使用 \d+ 个工具/, /工作了 \d+s/, /Thinking\.\.\./i, /Reasoning[:：]?/i];
+      const starts = [/已深度思考（用时[^）]*）/, /已思考（用时[^）]*）/, /思考过程[:：]?/, /已使用 web_search/, /搜索到 \d+ 个网页/, /搜索 \d+ 个网页/, /使用 \d+ 个工具/, /工作了 \d+s/, /Thinking\.\.\./i, /Reasoning[:：]?/i, /探索 \d+ 次文件/, /抓取网页/, /已读取/, /搜索结果已经指向/, /思考 TPS/, /输出 TPS/, /计划[:：]/];
       let s0 = -1;
       for (const re of starts) { const m = re.exec(t); if (m && (s0 < 0 || m.index < s0)) s0 = m.index; }
       if (s0 < 0) return t;
@@ -226,12 +243,12 @@ const checkDone = (cfg) => {
       let acc = 0;
       for (let i = 0; i < parts.length; i++) {
         const para = parts[i];
-        const thinkish = /用户要求|用户需要|需要搜索|让我搜索|计划[:：]|搜索[:：]|The user|Let's search|I need to|已思考|思考过程|web_search|搜索到|使用了?工具|分析中|当前日期|先说明|推断|我应该|需要查询/i.test(para);
+        const thinkish = /用户要求|用户需要|需要搜索|让我搜索|计划[:：]|搜索[:：]|The user|Let's search|I need to|已思考|思考过程|web_search|搜索到|使用了?工具|分析中|当前日期|先说明|推断|我应该|需要查询|查证|检索过程|搜索结果|抓取网页|探索 \d+ 次|Do not invent|Let me/i.test(para);
         if (i % 2 === 0 && para.trim().length > 20 && !thinkish) break;
         acc += para.length;
         if (acc > 3000) {
           const tailEnd = seg.slice(-1500);
-          const m = /结论[:：]|最终答案[:：]|截至\s*20\d{2}\s*年|官方来源|根据搜索结果|Node\.js 最新/.exec(tailEnd);
+          const m = /结论[:：]|最终答案[:：]|截至\s*20\d{2}\s*年|官方来源|根据搜索结果|查证完毕|最新|综合/.exec(tailEnd);
           const cut = m && m.index > 0 ? m.index : Math.max(0, tailEnd.length - 900);
           const short = (t.slice(0, s0) + '\n' + tailEnd.slice(cut).trim()).trim();
           return short.length >= 30 ? short : t;
@@ -257,9 +274,9 @@ const checkDone = (cfg) => {
   const stable = Date.now() - w.stableSince;
   const noise = /window\.HYDRATION|self\.__next_f|serverPainted|dehydratedAt|=>\{|\.input-flags|<style|<script/i.test(ans);
   const midStream = /思考中|继续问，消息会排队发送|正在搜索|搜索 \d+ 个网页|用户要求联网|用户需要联网|需要搜索并验证|需要先搜索|The user asks|Need search|Let's search|I need to search/i.test(ans);
-  const hasSignal = /来源|Sources|https?:\/\/|nvm|LTS|Node\.js|回答已完成|引用/.test(ans);
-  const done = !stop && !noise && !midStream && ans.length >= 30 && stable >= 3000 && (w.sawStream || hasSignal);
-  return done || (Date.now() - w.start > 150000);
+  const hasSignal = /来源|Sources|https?:\/\/|参考|已读取|搜索了|已完成|引用|版本|命令|结论|\d+\.\d+/i.test(ans);
+  const done = !stop && !noise && !midStream && ans.length >= 30 && stable >= (cfg.stableMs || 3000);
+  return done || (Date.now() - w.start > (cfg.maxMs || 150000));
 };
 
 export const getAnswerFn = (cfg) => {
@@ -294,7 +311,7 @@ export const getAnswerFn = (cfg) => {
     window.__egoAnchor = { found: idx >= 0, from, idx };
     if (idx >= 0 && from === 'before-first') {
       const cand = [...document.querySelectorAll('[class*="message"],[class*="markdown"],[class*="answer"],article')]
-        .filter(e => e.getBoundingClientRect().width > 0 && /LTS|nvm|Node\.js|版本/i.test(e.innerText || '') && (e.innerText || '').trim().length > 40 && !(e.innerText || '').includes(c.prompt));
+        .filter(e => e.getBoundingClientRect().width > 0 && /版本|来源|官方|https?:\/\/|安装|结论|截至|\d+\.\d+|参考/i.test(e.innerText || '') && (e.innerText || '').trim().length > 40 && !(e.innerText || '').includes(c.prompt));
       const last = cand[cand.length - 1];
       let pre = body.slice(Math.max(0, idx - 1600), idx);
       const marks = c.startMarks || [];
@@ -311,12 +328,13 @@ export const getAnswerFn = (cfg) => {
       tail = last ? (last.innerText || '').trim() : '';
     }
     tail = tail.replace(/^\s*(ChatGPT 说|助手|回答|Assistant|AI)[:：]?\s*/i, '');
-    const marks = ['ChatGPT 可能会出错', '回答已完成', '重新生成', '复制代码', '可能会出错。请核查', '最新一条回复', '个来源', '提出后续问题', 'Cookie 政策', 'Pro 已启用', '追问', '相关问题', '由 Step'];
+    const marks = ['ChatGPT 可能会出错', '回答已完成', '重新生成', '复制代码', '可能会出错。请核查', '最新一条回复', '提出后续问题', 'Cookie 政策', 'Pro 已启用', '追问', '相关问题', '由 Step', '内容由AI生成', '以上内容均由', '继续问，消息会排队发送', '和Kimi聊天的人太多了', '探索灵感', '模型介绍', '选择项目', '输入消息', '发送消息', '登录/注册', '我知道了', '去升级', '思考 TPS', '输出 TPS'];
     let cut = tail.length;
     for (const m of marks) { const i = tail.indexOf(m); if (i > 40 && i < cut) cut = i; }
     let out = tail.slice(0, cut).trim();
+    out = out.split('\n').filter((l, i, arr) => !(i >= arr.length - 6 && l.trim().length <= 6 && /^(消息|发送|快速|进阶|复制|分享|Muse|登录|注册|Claude|Kimi)$/i.test(l.trim()))).join('\n').trim();
     const stripThinking = (t) => {
-      const starts = [/已深度思考（用时[^）]*）/, /已思考（用时[^）]*）/, /思考过程[:：]?/, /已使用 web_search/, /搜索到 \d+ 个网页/, /搜索 \d+ 个网页/, /使用 \d+ 个工具/, /工作了 \d+s/, /Thinking\.\.\./i, /Reasoning[:：]?/i];
+      const starts = [/已深度思考（用时[^）]*）/, /已思考（用时[^）]*）/, /思考过程[:：]?/, /已使用 web_search/, /搜索到 \d+ 个网页/, /搜索 \d+ 个网页/, /使用 \d+ 个工具/, /工作了 \d+s/, /Thinking\.\.\./i, /Reasoning[:：]?/i, /探索 \d+ 次文件/, /抓取网页/, /已读取/, /搜索结果已经指向/, /思考 TPS/, /输出 TPS/, /计划[:：]/];
       let s0 = -1;
       for (const re of starts) { const m = re.exec(t); if (m && (s0 < 0 || m.index < s0)) s0 = m.index; }
       if (s0 < 0) return t;
@@ -332,12 +350,12 @@ export const getAnswerFn = (cfg) => {
       let acc = 0;
       for (let i = 0; i < parts.length; i++) {
         const para = parts[i];
-        const thinkish = /用户要求|用户需要|需要搜索|让我搜索|计划[:：]|搜索[:：]|The user|Let's search|I need to|已思考|思考过程|web_search|搜索到|使用了?工具|分析中|当前日期|先说明|推断|我应该|需要查询/i.test(para);
+        const thinkish = /用户要求|用户需要|需要搜索|让我搜索|计划[:：]|搜索[:：]|The user|Let's search|I need to|已思考|思考过程|web_search|搜索到|使用了?工具|分析中|当前日期|先说明|推断|我应该|需要查询|查证|检索过程|搜索结果|抓取网页|探索 \d+ 次|Do not invent|Let me/i.test(para);
         if (i % 2 === 0 && para.trim().length > 20 && !thinkish) break;
         acc += para.length;
         if (acc > 3000) {
           const tailEnd = seg.slice(-1500);
-          const m = /结论[:：]|最终答案[:：]|截至\s*20\d{2}\s*年|官方来源|根据搜索结果|Node\.js 最新/.exec(tailEnd);
+          const m = /结论[:：]|最终答案[:：]|截至\s*20\d{2}\s*年|官方来源|根据搜索结果|查证完毕|最新|综合/.exec(tailEnd);
           const cut = m && m.index > 0 ? m.index : Math.max(0, tailEnd.length - 900);
           const short = (t.slice(0, s0) + '\n' + tailEnd.slice(cut).trim()).trim();
           return short.length >= 30 ? short : t;
@@ -350,15 +368,29 @@ export const getAnswerFn = (cfg) => {
     return stripped.length >= 20 ? stripped : out;
   };
   const text = answerText(cfg);
-  const links = [...document.querySelectorAll('a[href^="http"]')]
+  const badLink = /(chatgpt\.com|perplexity\.ai|cloudflare|google\.com|apple\.com|microsoft\.com|doubao\.com|kimi\.com|aistudio\.tencent\.com|privacy|terms|cookie|consent|support\.|policies|beian|about)/i;
+  const rawLinks = [...document.querySelectorAll('a[href^="http"]')]
     .filter(a => a.getBoundingClientRect().width > 0)
     .map(a => a.href)
-    .filter(u => !/(chatgpt\.com|perplexity\.ai|cloudflare|google\.com|apple\.com|microsoft\.com|doubao\.com|kimi\.com|aistudio\.tencent\.com|privacy|terms|cookie|consent|support\.|policies|beian|about)/i.test(u));
+    .filter(u => u.length < 300 && !badLink.test(u) && !/%[0-9A-F]{2}%[0-9A-F]{2}%[0-9A-F]{2}/i.test(u));
+  let links = [...new Set(rawLinks)].slice(-12);
+  const textLinks = [...new Set((text.match(/https?:\/\/[^\s<>"')]+/g) || []))]
+    .filter(u => u.length < 300 && !badLink.test(u));
+  if (!links.length) links = textLinks.slice(0, 8);
+  const bodyText = document.body ? document.body.innerText : '';
+  const bodyLinks = [...new Set((bodyText.match(/https?:\/\/[^\s<>"')]+/g) || []))]
+    .filter(u => u.length < 300 && !badLink.test(u));
+  const allLinks = [...new Set([...textLinks, ...links, ...bodyLinks])];
+  const webEvidence = {
+    sourceCards: (bodyText.match(/(参考\s*\d+\s*篇|搜索了网页|\d+\s*sources?|已读取|引用来源|来源[:：]|个来源)/gi) || []).length,
+    domains: [...new Set(allLinks.map(u => (u.match(/^https?:\/\/([^\/]+)/) || [])[1]).filter(Boolean))].slice(0, 8),
+    textLinks: allLinks.slice(0, 8),
+  };
   const noise = /window\.HYDRATION|self\.__next_f|serverPainted|dehydratedAt|=>\{|\.input-flags|<style|<script/i.test(text);
   return {
     url: location.href, title: document.title,
     text: text.slice(0, 1600), chars: text.length,
-    links: [...new Set(links)].slice(-12),
+    links, webEvidence,
     quality: { anchor: window.__egoAnchor || null, scriptNoise: noise, cleaning: window.__egoClean || null },
     wait: window.__egoWait ? { polls: window.__egoWait.polls, maxChars: window.__egoWait.maxChars, sawStream: window.__egoWait.sawStream } : null,
   };
@@ -385,6 +417,7 @@ async function clearCloudflare(page, r) {
 
 export async function ask(page, site) {
   const r = { site: site.id, label: page.label, url: site.url, startedAt: new Date().toISOString() };
+  const t0 = Date.now();
   try {
     if (!site.skipGoto) {
       await page.goto(site.url, { timeout: 60000 });
@@ -402,6 +435,7 @@ export async function ask(page, site) {
       } else { r.status = 'blocked-no-editor'; return r; }
     }
     if (!r.landing.hasEditor) { r.status = 'blocked-no-editor-after-cf'; return r; }
+    if (r.landing.notLoggedIn) { r.status = 'blocked-not-logged-in'; return r; }
 
     if (site.freshSel) {
       try { await page.click(site.freshSel, { label: 'start fresh chat' }); await page.waitForTimeout(700); r.freshAction = 'clicked-new-chat'; }
@@ -443,21 +477,23 @@ export async function ask(page, site) {
     r.composer = await page.evaluate(composer);
     const marked = await page.evaluate(markControls, CFG);
     r.controls = marked;
+    let webDone = false;
     if (marked.web && !marked.webOn) {
-      try { await page.click('[data-ego-web="1"]', { label: 'enable web search' }); r.webAction = 'toggle:' + marked.web; }
+      try { await page.click('[data-ego-web="1"]', { label: 'enable web search' }); r.webAction = 'toggle:' + marked.web; webDone = true; }
       catch (e) { r.webError = String(e).slice(0, 120); }
-    } else if (marked.webOn) r.webAction = 'already-on:' + marked.web;
-    else if (marked.tools) {
+    } else if (marked.webOn) { r.webAction = 'already-on:' + marked.web; webDone = true; }
+    if (!webDone && marked.tools) {
       try {
         await page.click('[data-ego-tools="1"]', { label: 'open tools menu' });
         await page.waitForTimeout(600);
         const menu = await page.evaluate(markMenuItem, { words: ['联网搜索', '搜索网页', '网页搜索', '联网', 'search the web', 'web search'] });
         r.menu = menu;
-        if (menu.found) { await page.click('[data-ego-menu="1"]', { label: 'choose web search' }); r.webAction = 'menu:' + menu.found; }
+        if (menu.found) { await page.click('[data-ego-menu="1"]', { label: 'choose web search' }); r.webAction = 'menu:' + menu.found; webDone = true; }
         else { await page.keyboard.press('Escape'); r.webAction = 'menu-no-item'; }
       } catch (e) { r.webError = String(e).slice(0, 120); await page.keyboard.press('Escape').catch(() => { }); }
-    } else r.webAction = 'not-found';
-    if (site.id === 'perplexity' && /menu-no-item|not-found/.test(r.webAction || '')) r.webAction = 'default-web-on';
+    }
+    if (!webDone && !r.webAction) r.webAction = 'not-found';
+    if (site.defaultWeb && /menu-no-item|not-found/.test(r.webAction || '')) r.webAction = 'default-web-on';
 
     if (site.forceWeb && !/toggle|menu:|already-on/.test(r.webAction || '')) {
       const f = await page.evaluate(forceWebMark, { words: site.forceWebText || ['联网', '网页搜索', '搜索网页', 'web search'] });
@@ -472,9 +508,22 @@ export async function ask(page, site) {
           const e = document.querySelector('[data-ego-web-force]');
           return e ? { cls: String(e.className || '').slice(0, 90), aria: e.getAttribute('aria-pressed'), html: e.outerHTML.slice(0, 220) } : null;
         });
+        const popItem = await page.evaluate(() => {
+          const boxes = [...document.querySelectorAll('[role="dialog"],[data-state="open"],[aria-haspopup="dialog"]')]
+            .filter(e => e.getBoundingClientRect().width > 0);
+          const el = boxes.flatMap(d => [...d.querySelectorAll('button,[role="menuitem"],[role="switch"],label,span,div')])
+            .find(e => /联网|搜索|web search/i.test((e.innerText || e.getAttribute('aria-label') || '')) && (e.innerText || '').trim().length < 40);
+          if (!el) return false;
+          el.setAttribute('data-ego-force-item', '1');
+          return true;
+        });
+        if (popItem) {
+          try { await page.click('[data-ego-force-item="1"]', { label: 'confirm web toggle' }); r.webAction += ':confirmed'; }
+          catch (_) { await page.evaluate(() => document.querySelector('[data-ego-force-item]')?.click()).catch(() => { }); }
+        }
       } else r.webAction = 'force-not-found';
     }
-    if (marked.think) {
+    if (site.think && marked.think) {
       try { await page.click('[data-ego-think="1"]', { label: 'set thinking level' }); await page.waitForTimeout(350); await page.keyboard.press('Escape'); r.thinkAction = 'clicked:' + marked.think; }
       catch (e) { r.thinkError = String(e).slice(0, 100); }
     }
@@ -551,8 +600,9 @@ export async function ask(page, site) {
       }
     }
     await page.evaluate(initWait);
-    const runCfg = { prompt: PROMPT, from: site.answerFrom || 'after-last', minCleanChars: site.minCleanChars || 120, startMarks: site.answerStartMarks || [] };
-    try { await page.waitForFunction(checkDone, runCfg, { timeout: 150000, polling: 1000 }); r.waitStatus = 'finished'; }
+    const waitMs = site.waitMs || 150000;
+    const runCfg = { prompt: PROMPT, from: site.answerFrom || 'after-last', minCleanChars: site.minCleanChars || 120, startMarks: site.answerStartMarks || [], maxMs: waitMs, stableMs: site.stableMs || 3000 };
+    try { await page.waitForFunction(checkDone, runCfg, { timeout: waitMs, polling: 1000 }); r.waitStatus = 'finished'; }
     catch (e) { r.waitStatus = 'timeout:' + String(e).slice(0, 70); }
     r.answer = await page.evaluate(getAnswerFn, runCfg);
     const q = (r.answer && r.answer.quality) || {};
@@ -565,19 +615,37 @@ export async function ask(page, site) {
     r.cfAction = r.cfAction || 'no-challenge';
     const aText = (r.answer && r.answer.text) || '';
     const aLinks = (r.answer && r.answer.links) || [];
-    const hasAnswerSignal = /nvm install|nodejs\.org|\bLTS\b|来源|Sources|https?:\/\//i.test(aText)
-      || aLinks.some(u => /nodejs\.org/i.test(u));
+    const hasAnswerSignal = /https?:\/\/|来源|Sources|参考\s*\d+\s*篇|版本|结论|安装|已读取|已核实|查证/i.test(aText) || aLinks.length > 0;
     r.answerQuality.hasAnswerSignal = hasAnswerSignal;
-    r.status = (!r.answerQuality.scriptNoise && r.answerQuality.chars >= 30 && (r.answerQuality.anchorFound || hasAnswerSignal))
+    r.webEvidence = (r.answer && r.answer.webEvidence) || null;
+    const uiOnly = r.answerQuality.chars > 0 && r.answerQuality.chars < 80 && /输入消息|发送消息|继续问|选择项目|登录|注册|我知道了|去升级/.test(aText);
+    const rateLimited = /使用人数较多|请稍后再试|rate limit|高峰时段|订阅.*优先|升级.*优先|too many requests/i.test(aText);
+    if (r.answerQuality.chars === 0) r.status = 'blocked-no-answer';
+    else if (rateLimited) r.status = 'blocked-rate-limited';
+    else if (uiOnly) r.status = 'answer-suspect';
+    else r.status = (!r.answerQuality.scriptNoise && r.answerQuality.chars >= 30 && (r.answerQuality.anchorFound || hasAnswerSignal))
       ? 'answered' : 'answered-unverified';
   } catch (e) {
     r.status = 'error';
     r.error = String(e).slice(0, 300);
+  } finally {
+    r.durationMs = Date.now() - t0;
+    r.endedAt = new Date().toISOString();
   }
   return r;
 }
 
-export async function recoverAnswer(page, siteId) {
-  const a = await page.evaluate(getAnswerFn, { prompt: PROMPT });
+export async function diagnose(page) {
+  return {
+    landing: await page.evaluate(landing),
+    composer: await page.evaluate(composer),
+    controls: await page.evaluate(markControls, CFG),
+  };
+}
+
+export async function recoverAnswer(page, siteId, opts = {}) {
+  const cfg = { prompt: PROMPT, from: opts.from || 'after-last', minCleanChars: opts.minCleanChars || 120,
+    startMarks: opts.startMarks || [], maxMs: opts.waitMs || 150000, stableMs: opts.stableMs || 3000 };
+  const a = await page.evaluate(getAnswerFn, cfg);
   return { site: siteId, label: page.label, answer: a };
 }

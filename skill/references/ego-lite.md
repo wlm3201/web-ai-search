@@ -30,8 +30,8 @@
 
 ## 4. 权限弹窗与空间恢复
 
-- 浏览器自有的通知/定位类权限弹窗有时会把 TaskSpace 交还用户。若发生，用 `takeOverTaskSpace(spaceId)` 恢复**同一**空间继续，不新建空间、不盲目重试同一失败命令。
-- 登录、人工验证码、支付、用户显式接管仍需停止并 `handOff()`。
+- 浏览器自有的通知/定位/剪贴板/粘贴类权限提示有时会把 TaskSpace 交还用户。先判断该提示是否**必须用户处理**：属于必须人工处理的，遵循运行时官方指南 `handOff()` 并停止，不要用 `takeOverTaskSpace` 绕过；只是无意义弹窗且已获用户授权的，才用 `takeOverTaskSpace(spaceId)` 恢复同一空间继续。
+- 无论哪种情况都不新建空间、不盲目重试同一失败命令；登录、人工验证码、支付、显式接管一律停止。
 
 ## 5. 输入、开关与按钮
 
@@ -60,3 +60,11 @@
 
 - 本 skill 只使用 ego lite，所有页面操作都通过 `ego-browser nodejs` 的 `page` API 完成。
 - 不要清理 profile、不要 `isolatedContext`、不要改 UA，否则会丢登录态或触发风控。
+
+## 10. 运行时约束与自检
+
+- **`nodejs` 运行时不继承 shell 环境变量**：`process.env` 里的外部变量读不到。题目、站点子集、输出目录、等待上限一律写进 `run.json` 或脚本常量。
+- 等待上限与稳定窗口可在站点配置里用 `waitMs` / `stableMs` 覆盖；`ask()` 会同时传给 `page.waitForFunction` 和页面内的 `checkDone`。
+- 开始前自检：CLI 可用、指南读完、浏览器已登录目标站点、代理就绪（可选）、输出目录可写。
+- `ask()` 会在 landing 阶段检测未登录页面并直接返回 `blocked-not-logged-in`，不会白等到超时；遇到该状态先在浏览器里登录再重跑。
+- 结果里的 `durationMs` 可用于比较各站耗时；`batchMs` 是整批墙钟时间。

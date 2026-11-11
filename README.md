@@ -37,6 +37,7 @@ skill/references/ego-lite.md    ego lite backend guide
 skill/references/sites.md       per-site controls and pitfalls
 skill/scripts/ego_ask_lib.mjs   ask/save/setPrompt: open, pass CF, toggle web, send, wait, extract
 skill/scripts/ego_sites.json    site list, priority, new-chat selectors, thinking levels
+run.json (optional, next to the copied scripts)  override prompt / site subset / wait limits
 skill/scripts/ego_*_example.mjs portable round/batch templates
 skill/scripts/ensure_proxy.py  optional proxy check
 ```
@@ -77,3 +78,19 @@ Delete the install directory (default `~/.agents/skills/web-ai-search`).
 ## License
 
 MIT
+
+## Change the question or select sites
+
+The `ego-browser nodejs` runtime does **not** inherit shell environment variables. Copy the example scripts together with `ego_ask_lib.mjs` and `ego_sites.json` into a working directory, then put a `run.json` next to them:
+
+```json
+{
+  "prompt": "Ask anything that needs a web search here",
+  "sites": ["perplexity", "chatgpt"],
+  "outDir": "web-ai-search-runs",
+  "waitMs": 90000,
+  "stableMs": 2500
+}
+```
+
+Omit `sites` to run all sites (acceptance/benchmark use only; daily use should call the top 1-3). Every result contains `durationMs`, `status`, `webAction` and `webEvidence`. Prefer `webEvidence` plus the answer text over `webAction` when deciding whether a site really searched the web.
