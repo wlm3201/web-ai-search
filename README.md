@@ -45,6 +45,28 @@ skill/scripts/ai_*.js           page-side tools for the MCP backend
 skill/scripts/*.py              bookmark reader, proxy check, MCP tool sync
 ```
 
+## Install from GitHub
+
+Once the source repository is pushed, no npm publish is required:
+
+```bash
+npx github:OWNER/web-ai-search install
+# or
+npm i -g github:OWNER/web-ai-search
+```
+
+Replace `OWNER` with your GitHub account name. A private repository requires git credentials on the new machine.
+
+## Offline / pre-release install
+
+A tarball can be produced and copied to the new machine without any registry:
+
+```bash
+npm pack --pack-destination .        # web-ai-search-1.0.0.tgz
+npm i -g ./web-ai-search-1.0.0.tgz
+npx web-ai-search install
+```
+
 ## Privacy & safety
 
 - The CLI copies files locally. It never reads cookie contents, never contacts AI sites, and never uploads anything.
