@@ -183,6 +183,11 @@ const checkDone = (cfg) => {
         const r = n.getBoundingClientRect();
         return r.width > 0 && r.width < innerWidth * 0.45 && r.left < innerWidth * 0.45;
       });
+      for (const n of document.querySelectorAll('div,aside,nav')) {
+        const r = n.getBoundingClientRect();
+        if (r.width > 150 && r.width < 330 && r.left < 40 && getComputedStyle(n).position === 'fixed'
+            && !nodes.includes(n)) nodes.push(n);
+      }
       const saved = nodes.map(n => { try { return { n, d: n.style.display }; } catch (_) { return { n, d: '' }; } });
       const restore = () => saved.forEach(({ n, d }) => { try { n.style.display = d; } catch (_) { } });
       saved.forEach(({ n }) => { try { n.style.display = 'none'; } catch (_) { } });
@@ -203,10 +208,14 @@ const checkDone = (cfg) => {
     let tail = '';
     window.__egoAnchor = { found: idx >= 0, from, idx };
     if (idx >= 0 && from === 'before-first') {
-      const cand = [...document.querySelectorAll('[class*="message"],[class*="markdown"],[class*="answer"],article')]
-        .filter(e => e.getBoundingClientRect().width > 0 && /版本|来源|官方|https?:\/\/|安装|结论|截至|\d+\.\d+|参考/i.test(e.innerText || '') && (e.innerText || '').trim().length > 40 && !(e.innerText || '').includes(c.prompt));
+      const cand = [...document.querySelectorAll('[class*="message"],[class*="markdown"],[class*="answer"],[class*="bubble"],[class*="content"],article,[data-role="assistant"]')]
+        .filter(e => e.getBoundingClientRect().width > 0 && !/sidebar|history|nav|menu/i.test(String(e.className || '')))
+        .filter(e => /https?:\/\/|来源|官方|结论|截至|版本|安装|\d+\.\d+|参考/i.test(e.innerText || '') && (e.innerText || '').trim().length > 60 && !(e.innerText || '').includes(c.prompt));
       const last = cand[cand.length - 1];
-      let pre = body.slice(Math.max(0, idx - 1600), idx);
+      let pre = body.slice(Math.max(0, idx - 1600), idx)
+        .split('\n')
+        .filter(l => l.trim().length > 12 && !/推荐|任务中心|Research|AI Studio|开放平台|下载.*桌面版|积分|半年前|今天|昨天|正在阅读|历史|侧边/.test(l))
+        .join('\n');
       const marks = c.startMarks || [];
       let start = -1;
       for (const m of marks) { const j = pre.lastIndexOf(m); if (j > start) start = j; }
@@ -258,7 +267,24 @@ const checkDone = (cfg) => {
       return cleaned.length >= 30 ? cleaned : t;
     };
     const stripped = stripThinking(out);
-    return stripped.length >= 20 ? stripped : out;
+    let final = stripped.length >= 20 ? stripped : out;
+    if (final.length < 30) {
+      const cand = [...document.querySelectorAll('div,section,article,main')]
+        .filter(e => e.getBoundingClientRect().width > 0)
+        .filter(e => !/sidebar|history|nav|panel|w-72|shallowGold/i.test(String(e.className || '')))
+        .filter(e => {
+          const r = e.getBoundingClientRect();
+          return !(getComputedStyle(e).position === 'fixed' && r.width < 330 && r.left < 40);
+        })
+        .map(e => (e.innerText || '').trim())
+        .filter(t => t.length > 120 && t.length < 4000 && !t.includes(c.prompt)
+          && !/^(今天|新话题|昨天)/.test(t)
+          && /https?:\/\/|来源|结论|版本|官方/i.test(t));
+      const withLinks = cand.filter(t => /https?:\/\//.test(t));
+      const pool = withLinks.length ? withLinks : cand;
+      if (pool.length) final = pool[pool.length - 1];
+    }
+    return final;
   };
   if (!window.__egoWait) window.__egoWait = { last: '', stableSince: Date.now(), start: Date.now(), sawStream: false, polls: 0, maxChars: 0 };
   const w = window.__egoWait;
@@ -273,7 +299,7 @@ const checkDone = (cfg) => {
   w.polls++;
   const stable = Date.now() - w.stableSince;
   const noise = /window\.HYDRATION|self\.__next_f|serverPainted|dehydratedAt|=>\{|\.input-flags|<style|<script/i.test(ans);
-  const midStream = /思考中|继续问，消息会排队发送|正在搜索|搜索 \d+ 个网页|用户要求联网|用户需要联网|需要搜索并验证|需要先搜索|The user asks|Need search|Let's search|I need to search/i.test(ans);
+  const midStream = /思考中|继续问，消息会排队发送|正在搜索|正在阅读|正在检索|正在生成|生成中|阅读中|正在分析|搜索 \d+ 个网页|用户要求联网|用户需要联网|需要搜索并验证|需要先搜索|The user asks|Need search|Let's search|I need to search/i.test(ans);
   const hasSignal = /来源|Sources|https?:\/\/|参考|已读取|搜索了|已完成|引用|版本|命令|结论|\d+\.\d+/i.test(ans);
   const done = !stop && !noise && !midStream && ans.length >= 30 && stable >= (cfg.stableMs || 3000);
   return done || (Date.now() - w.start > (cfg.maxMs || 150000));
@@ -290,6 +316,11 @@ export const getAnswerFn = (cfg) => {
         const r = n.getBoundingClientRect();
         return r.width > 0 && r.width < innerWidth * 0.45 && r.left < innerWidth * 0.45;
       });
+      for (const n of document.querySelectorAll('div,aside,nav')) {
+        const r = n.getBoundingClientRect();
+        if (r.width > 150 && r.width < 330 && r.left < 40 && getComputedStyle(n).position === 'fixed'
+            && !nodes.includes(n)) nodes.push(n);
+      }
       const saved = nodes.map(n => { try { return { n, d: n.style.display }; } catch (_) { return { n, d: '' }; } });
       const restore = () => saved.forEach(({ n, d }) => { try { n.style.display = d; } catch (_) { } });
       saved.forEach(({ n }) => { try { n.style.display = 'none'; } catch (_) { } });
@@ -310,10 +341,14 @@ export const getAnswerFn = (cfg) => {
     let tail = '';
     window.__egoAnchor = { found: idx >= 0, from, idx };
     if (idx >= 0 && from === 'before-first') {
-      const cand = [...document.querySelectorAll('[class*="message"],[class*="markdown"],[class*="answer"],article')]
-        .filter(e => e.getBoundingClientRect().width > 0 && /版本|来源|官方|https?:\/\/|安装|结论|截至|\d+\.\d+|参考/i.test(e.innerText || '') && (e.innerText || '').trim().length > 40 && !(e.innerText || '').includes(c.prompt));
+      const cand = [...document.querySelectorAll('[class*="message"],[class*="markdown"],[class*="answer"],[class*="bubble"],[class*="content"],article,[data-role="assistant"]')]
+        .filter(e => e.getBoundingClientRect().width > 0 && !/sidebar|history|nav|menu/i.test(String(e.className || '')))
+        .filter(e => /https?:\/\/|来源|官方|结论|截至|版本|安装|\d+\.\d+|参考/i.test(e.innerText || '') && (e.innerText || '').trim().length > 60 && !(e.innerText || '').includes(c.prompt));
       const last = cand[cand.length - 1];
-      let pre = body.slice(Math.max(0, idx - 1600), idx);
+      let pre = body.slice(Math.max(0, idx - 1600), idx)
+        .split('\n')
+        .filter(l => l.trim().length > 12 && !/推荐|任务中心|Research|AI Studio|开放平台|下载.*桌面版|积分|半年前|今天|昨天|正在阅读|历史|侧边/.test(l))
+        .join('\n');
       const marks = c.startMarks || [];
       let start = -1;
       for (const m of marks) { const j = pre.lastIndexOf(m); if (j > start) start = j; }
@@ -365,7 +400,24 @@ export const getAnswerFn = (cfg) => {
       return cleaned.length >= 30 ? cleaned : t;
     };
     const stripped = stripThinking(out);
-    return stripped.length >= 20 ? stripped : out;
+    let final = stripped.length >= 20 ? stripped : out;
+    if (final.length < 30) {
+      const cand = [...document.querySelectorAll('div,section,article,main')]
+        .filter(e => e.getBoundingClientRect().width > 0)
+        .filter(e => !/sidebar|history|nav|panel|w-72|shallowGold/i.test(String(e.className || '')))
+        .filter(e => {
+          const r = e.getBoundingClientRect();
+          return !(getComputedStyle(e).position === 'fixed' && r.width < 330 && r.left < 40);
+        })
+        .map(e => (e.innerText || '').trim())
+        .filter(t => t.length > 120 && t.length < 4000 && !t.includes(c.prompt)
+          && !/^(今天|新话题|昨天)/.test(t)
+          && /https?:\/\/|来源|结论|版本|官方/i.test(t));
+      const withLinks = cand.filter(t => /https?:\/\//.test(t));
+      const pool = withLinks.length ? withLinks : cand;
+      if (pool.length) final = pool[pool.length - 1];
+    }
+    return final;
   };
   const text = answerText(cfg);
   const badLink = /(chatgpt\.com|perplexity\.ai|cloudflare|google\.com|apple\.com|microsoft\.com|doubao\.com|kimi\.com|aistudio\.tencent\.com|privacy|terms|cookie|consent|support\.|policies|beian|about)/i;

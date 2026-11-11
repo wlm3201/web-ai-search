@@ -34,7 +34,9 @@
       "priority": 5,
       "url": "https://muse.ai/",
       "freshClick": true,
-      "newChatText": ["新旁聊"],
+      "newChatText": [
+        "新旁聊"
+      ],
       "freshWaitText": "新旁聊",
       "freshInSidebar": true,
       "defaultWeb": true
@@ -70,10 +72,10 @@
       "priority": 10,
       "url": "https://www.stepfun.com/chats/new",
       "newChatUrl": "https://www.stepfun.com/chats/new",
-      "answerFrom": "before-first",
-      "answerStartMarks": ["截至", "最新", "版本", "结论", "官方来源"],
       "forceWeb": true,
-      "forceWebText": ["搜索"]
+      "forceWebText": [
+        "搜索"
+      ]
     },
     {
       "id": "zai",
@@ -82,9 +84,15 @@
       "newChatUrl": "https://zchat.z.ai/",
       "minCleanChars": 300,
       "clickSequence": [
-        { "sel": "button.modelSelectorButton" },
-        { "text": "GLM-5.3-Flash" },
-        { "slider": "low" }
+        {
+          "sel": "button.modelSelectorButton"
+        },
+        {
+          "text": "GLM-5.3-Flash"
+        },
+        {
+          "slider": "low"
+        }
       ]
     },
     {
@@ -92,13 +100,22 @@
       "priority": 12,
       "url": "https://aistudio.tencent.com/",
       "freshClick": true,
-      "newChatText": ["新建会话", "新对话", "开启新对话", "新建对话"],
+      "newChatText": [
+        "新建会话",
+        "新对话",
+        "开启新对话",
+        "新建对话"
+      ],
       "freshInSidebar": true,
       "forceWeb": true,
       "minCleanChars": 300,
       "clickSequence": [
-        { "sel": "span.paint-button-value" },
-        { "text": "No Think" }
+        {
+          "sel": "span.paint-button-value"
+        },
+        {
+          "text": "No Think"
+        }
       ]
     },
     {
@@ -106,7 +123,9 @@
       "priority": 13,
       "url": "https://aistudio.xiaomimimo.com/#/",
       "freshClick": true,
-      "newChatText": ["新对话"],
+      "newChatText": [
+        "新对话"
+      ],
       "freshInSidebar": true,
       "defaultWeb": true
     },
@@ -119,9 +138,15 @@
       "sendRetry": true,
       "thinkLevel": "标准",
       "clickSequence": [
-        { "sel": "[data-testid=\"model-select-trigger\"]" },
-        { "sel": "button.effort-item" },
-        { "text": "$thinkLevel" }
+        {
+          "sel": "[data-testid=\"model-select-trigger\"]"
+        },
+        {
+          "sel": "button.effort-item"
+        },
+        {
+          "text": "$thinkLevel"
+        }
       ]
     }
   ]
