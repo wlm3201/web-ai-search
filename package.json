@@ -1,7 +1,7 @@
 {
   "name": "web-ai-search",
-  "version": "1.0.0",
-  "description": "Installable CodeBuddy skill: let a local AI drive logged-in web AI chat sites for online search, fact-checking and cross-model answers.",
+  "version": "1.0.1",
+  "description": "Agent skill that lets any local AI agent drive logged-in web AI chat sites for online search, fact-checking and cross-model answers.",
   "type": "module",
   "bin": {
     "web-ai-search": "bin/cli.mjs"
@@ -21,10 +21,13 @@
     "browser",
     "search",
     "skill",
-    "codebuddy",
     "ego-browser",
     "chrome-devtools",
-    "mcp"
+    "mcp",
+    "agent-skills",
+    "claude-code",
+    "codex",
+    "cursor"
   ],
   "repository": {
     "type": "git",

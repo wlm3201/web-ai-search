@@ -1,6 +1,6 @@
 # web-ai-search
 
-An installable [CodeBuddy](https://www.codebuddy.ai/) skill that lets a local AI use logged-in web AI chat sites for online search, fact-checking and cross-model answers.
+An agent skill that lets any local AI agent (Claude Code, Codex, Cursor, or a custom one) use logged-in web AI chat sites for online search, fact-checking and cross-model answers.
 
 The package contains **documentation + local automation scripts only**. It does not contain credentials, browser profiles, cookies, hostnames, or any machine-specific paths.
 
@@ -13,7 +13,7 @@ npx web-ai-search install
 npx web-ai-search doctor
 ```
 
-This copies the skill to `~/.codebuddy/skills/web-ai-search/`. Then:
+This copies the skill to `~/.agents/skills/web-ai-search/` — the same user-level skills directory ego lite uses for its `ego-browser` skill, so any agent that reads `~/.agents/skills` can pick it up. Then:
 
 1. In your browser, log in to the AI sites you want to use.
 2. Put their links in a bookmark-bar folder named `AI`.
@@ -26,7 +26,7 @@ This copies the skill to `~/.codebuddy/skills/web-ai-search/`. Then:
 | --- | --- |
 | `npx web-ai-search install` | Install the skill into the default user-level skills directory |
 | `npx web-ai-search install --target <dir>` | Install into a custom directory |
-| `npx web-ai-search install --workspace <dir>` | Also sync MCP page-side JS tools into `<dir>/.codebuddy/web-ai-search` (MCP `sourcePath` is workspace-scoped) |
+| `npx web-ai-search install --workspace <dir>` | Also sync MCP page-side JS tools into `<dir>/.web-ai-search` (MCP `sourcePath` is workspace-scoped) |
 | `npx web-ai-search install --force` | Overwrite an existing installation |
 | `npx web-ai-search doctor` | Report Node/Python/browser-tool availability and install paths |
 | `npx web-ai-search --help` / `--version` | Help / version |
@@ -76,7 +76,7 @@ npx web-ai-search install
 
 ## Uninstall
 
-Delete the install directory (default `~/.codebuddy/skills/web-ai-search`) and, if used, `<workspace>/.codebuddy/web-ai-search`.
+Delete the install directory (default `~/.agents/skills/web-ai-search`) and, if used, `<workspace>/.web-ai-search`.
 
 ## License
 

@@ -23,12 +23,12 @@ description: 让本地 AI 借用已登录的网页版 AI（书签栏 AI 文件�
 
 ## 0. 一次性准备
 
-安装后 skill 默认位于 `~/.codebuddy/skills/web-ai-search`（下文用 `<SKILL>` 表示，可用 `npx web-ai-search install --target <dir>` 改）。
+安装后 skill 默认位于 `~/.agents/skills/web-ai-search`——与 ego lite 的 `ego-browser` skill 使用同一个用户级 skills 目录，Claude Code / Codex / Cursor 或任何会读取 `~/.agents/skills` 的 agent 都能直接使用（下文用 `<SKILL>` 表示，可用 `npx web-ai-search install --target <dir>` 改）。
 
 1. **站点清单**：在浏览器书签栏建一个 `AI` 文件夹，把要用的网页 AI 放进去并登录好。运行 `python <SKILL>/scripts/read_ai_bookmarks.py --folder AI` 取 URL；也可用 `--user-data-dir <dir>` 指定 profile。不要硬编码站点清单。
 2. **登录态**：cookie 属于各自的浏览器 profile。不要清理/重建 profile、不要 `isolatedContext`、不要改 UA，否则会掉登录或触发风控。
 3. **可选代理**：浏览器需要代理时，先跑 `python <SKILL>/scripts/ensure_proxy.py --check-only`；脚本支持 `--port`（默认 7897）与 `--verify`。Windows 下若代理端口在监听但系统代理未开，`--verify` 会尝试自动开启并验证出口；其他平台请在系统/浏览器里设置。
-4. **MCP 后端**：`sourcePath` 只允许工作区内路径，先 `python <SKILL>/scripts/sync_tools.py --workspace <工作区>`，再用相对路径 `.codebuddy/web-ai-search/ai_lib.js`。
+4. **MCP 后端**：`sourcePath` 只允许工作区内路径，先 `python <SKILL>/scripts/sync_tools.py --workspace <工作区>`，再用相对路径 `.web-ai-search/ai_lib.js`。
 5. **ego lite 后端**：先运行 `ego-browser skill` 读当前版本指南；PowerShell 下把任务写成 UTF-8 `.mjs` 文件，用 `ego-browser nodejs -e "await import('file:///<绝对路径>/round.mjs')"` 调用。
 
 ## 1. 站点路由与调用优先级

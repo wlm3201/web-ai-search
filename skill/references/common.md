@@ -17,7 +17,7 @@
 python <SKILL>/scripts/sync_tools.py --workspace <工作区>
 ```
 
-之后统一用相对路径，例如 `.codebuddy/web-ai-search/ai_lib.js`。每次操作前先 `list_pages`。
+之后统一用相对路径，例如 `.web-ai-search/ai_lib.js`。每次操作前先 `list_pages`。
 
 ## 2. 页面内工具速查
 
@@ -32,9 +32,9 @@ python <SKILL>/scripts/sync_tools.py --workspace <工作区>
 调用形态：
 
 ```
-evaluate_script {"pageId":N,"sourcePath":".codebuddy/web-ai-search/ai_lib.js"}
-evaluate_script {"pageId":N,"sourcePath":".codebuddy/web-ai-search/ai_toggles.js","waitForStableDom":false}
-evaluate_script {"pageId":N,"sourcePath":".codebuddy/web-ai-search/ai_wait.js","waitForStableDom":false}
+evaluate_script {"pageId":N,"sourcePath":".web-ai-search/ai_lib.js"}
+evaluate_script {"pageId":N,"sourcePath":".web-ai-search/ai_toggles.js","waitForStableDom":false}
+evaluate_script {"pageId":N,"sourcePath":".web-ai-search/ai_wait.js","waitForStableDom":false}
 ```
 
 ## 3. 标准流程

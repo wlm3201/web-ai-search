@@ -10,7 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
 const skillSrc = path.join(root, 'skill');
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
-const DEFAULT_TARGET = path.join(os.homedir(), '.codebuddy', 'skills', 'web-ai-search');
+const DEFAULT_TARGET = path.join(os.homedir(), '.agents', 'skills', 'web-ai-search');
 
 const HELP = `web-ai-search ${pkg.version}
 
@@ -20,8 +20,8 @@ Usage:
   npx web-ai-search --help | --version
 
 Options:
-  --target <dir>      Skill install directory (default: ~/.codebuddy/skills/web-ai-search)
-  --workspace <dir>   Also sync MCP page-side JS tools into <dir>/.codebuddy/web-ai-search
+  --target <dir>      Skill install directory (default: ~/.agents/skills/web-ai-search)
+  --workspace <dir>   Also sync MCP page-side JS tools into <dir>/.web-ai-search
   --force             Overwrite an existing installation
 
 The CLI only copies files on this machine. It never reads browser cookies,
@@ -60,13 +60,13 @@ async function install(o) {
 
   if (o.workspace) {
     const ws = path.resolve(o.workspace);
-    const dest = path.join(ws, '.codebuddy', 'web-ai-search');
+    const dest = path.join(ws, '.web-ai-search');
     await mkdir(dest, { recursive: true });
     const scripts = path.join(target, 'scripts');
     const files = (await readdir(scripts)).filter(f => f.endsWith('.js'));
     for (const f of files) await cp(path.join(scripts, f), path.join(dest, f), { force: true });
     console.log(`Synced ${files.length} MCP page-side tools to:\n  ${dest}`);
-    console.log('Use relative sourcePath values, e.g. .codebuddy/web-ai-search/ai_lib.js');
+    console.log('Use relative sourcePath values, e.g. .web-ai-search/ai_lib.js');
   }
 
   console.log('\nNext steps:');
