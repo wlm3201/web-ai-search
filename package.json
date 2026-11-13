@@ -1,0 +1,40 @@
+{
+  "name": "web-ai-search",
+  "version": "1.2.1",
+  "description": "Agent skill that lets any local AI agent drive logged-in web AI chat sites with ego lite for online search, fact-checking and cross-model answers.",
+  "type": "module",
+  "bin": {
+    "web-ai-search": "bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "skill/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "browser",
+    "search",
+    "skill",
+    "ego-browser",
+    "agent-skills",
+    "claude-code",
+    "codex",
+    "cursor",
+    "ego-lite",
+    "browser-automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wlm3201/web-ai-search.git"
+  },
+  "homepage": "https://github.com/wlm3201/web-ai-search#readme",
+  "bugs": {
+    "url": "https://github.com/wlm3201/web-ai-search/issues"
+  }
+}

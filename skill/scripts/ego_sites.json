@@ -1,0 +1,153 @@
+{
+  "prompt": "请联网搜索：所用编程语言的最新稳定版本是什么？请给出官方来源链接，并写出一条安装命令。",
+  "notes": "sites 数组顺序即调用优先级，priority 为显式编号。换题/选站点/改等待用同目录的 run.json 覆盖，不必改本文件。defaultWeb 表示该站默认联网；clickSequence 支持 sel / text / slider:low；$thinkLevel 由 site.thinkLevel 覆盖；waitMs / stableMs 可按站覆盖。",
+  "sites": [
+    {
+      "id": "perplexity",
+      "priority": 1,
+      "url": "https://www.perplexity.ai/",
+      "newChatUrl": "https://www.perplexity.ai/",
+      "defaultWeb": true
+    },
+    {
+      "id": "chatgpt",
+      "priority": 2,
+      "url": "https://chatgpt.com/",
+      "freshClick": true,
+      "freshInSidebar": true
+    },
+    {
+      "id": "gemini",
+      "priority": 3,
+      "url": "https://gemini.google.com/app",
+      "newChatUrl": "https://gemini.google.com/app"
+    },
+    {
+      "id": "grok",
+      "priority": 4,
+      "url": "https://grok.com/",
+      "newChatUrl": "https://grok.com/",
+      "defaultWeb": true
+    },
+    {
+      "id": "muse",
+      "priority": 5,
+      "url": "https://muse.ai/",
+      "freshClick": true,
+      "newChatText": [
+        "新旁聊"
+      ],
+      "freshWaitText": "新旁聊",
+      "freshInSidebar": true,
+      "defaultWeb": true
+    },
+    {
+      "id": "claude",
+      "priority": 6,
+      "url": "https://claude.ai/new",
+      "newChatUrl": "https://claude.ai/new"
+    },
+    {
+      "id": "doubao",
+      "priority": 7,
+      "url": "https://www.doubao.com/chat/",
+      "freshSel": "[data-testid=\"create_conversation_button\"]"
+    },
+    {
+      "id": "qwen",
+      "priority": 8,
+      "url": "https://chat.qwen.ai/",
+      "freshClick": true,
+      "freshInSidebar": true
+    },
+    {
+      "id": "deepseek",
+      "priority": 9,
+      "url": "https://chat.deepseek.com/",
+      "freshClick": true,
+      "freshInSidebar": true
+    },
+    {
+      "id": "stepfun",
+      "priority": 10,
+      "url": "https://www.stepfun.com/chats/new",
+      "newChatUrl": "https://www.stepfun.com/chats/new",
+      "forceWeb": true,
+      "forceWebText": [
+        "搜索"
+      ]
+    },
+    {
+      "id": "zai",
+      "priority": 11,
+      "url": "https://zchat.z.ai/",
+      "newChatUrl": "https://zchat.z.ai/",
+      "minCleanChars": 300,
+      "clickSequence": [
+        {
+          "sel": "button.modelSelectorButton"
+        },
+        {
+          "text": "GLM-5.3-Flash"
+        },
+        {
+          "slider": "low"
+        }
+      ]
+    },
+    {
+      "id": "hunyuan",
+      "priority": 12,
+      "url": "https://aistudio.tencent.com/",
+      "freshClick": true,
+      "newChatText": [
+        "新建会话",
+        "新对话",
+        "开启新对话",
+        "新建对话"
+      ],
+      "freshInSidebar": true,
+      "forceWeb": true,
+      "minCleanChars": 300,
+      "clickSequence": [
+        {
+          "sel": "span.paint-button-value"
+        },
+        {
+          "text": "No Think"
+        }
+      ]
+    },
+    {
+      "id": "mimo",
+      "priority": 13,
+      "url": "https://aistudio.xiaomimimo.com/#/",
+      "freshClick": true,
+      "newChatText": [
+        "新对话"
+      ],
+      "freshInSidebar": true,
+      "defaultWeb": true
+    },
+    {
+      "id": "kimi",
+      "priority": 14,
+      "url": "https://kimi.moonshot.cn/",
+      "newChatUrl": "https://www.kimi.com/?chat_enter_method=new_chat",
+      "minCleanChars": 400,
+      "sendRetry": true,
+      "thinkLevel": "标准",
+      "clickSequence": [
+        {
+          "sel": "[data-testid=\"model-select-trigger\"]"
+        },
+        {
+          "sel": "button.effort-item"
+        },
+        {
+          "text": "$thinkLevel"
+        }
+      ]
+    }
+  ]
+}
