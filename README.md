@@ -15,8 +15,8 @@ npx web-ai-search doctor
 
 This copies the skill to `~/.agents/skills/web-ai-search/` — the same user-level skills directory ego lite uses for its `ego-browser` skill, so any agent that reads `~/.agents/skills` can pick it up. Then:
 
-1. In ego lite, log in to the AI sites you want to use. The site list is built into `<skill>/scripts/ego_sites.json` (edit it to add or remove sites).
-2. Read `<skill>/SKILL.md` and `<skill>/references/ego-lite.md`.
+1. In ego lite, log in to the AI sites you want to use. Each site has its own file under `<skill>/scripts/sites/<id>.mjs`; `<skill>/scripts/sites/index.mjs` sets the call priority.
+2. Read `<skill>/SKILL.md`. It documents the single `search()` call; everything else is optional deep-dive.
 3. Use **ego lite** as the browser backend (the only supported backend).
 
 ## Commands
@@ -32,14 +32,16 @@ This copies the skill to `~/.agents/skills/web-ai-search/` — the same user-lev
 ## What's in the package
 
 ```
-skill/SKILL.md                  main workflow, routing, call priority
-skill/references/ego-lite.md    ego lite backend guide
-skill/references/sites.md       per-site controls and pitfalls
-skill/scripts/ego_ask_lib.mjs   ask/save/setPrompt: open, pass CF, toggle web, send, wait, extract
-skill/scripts/ego_sites.json    site list, priority, new-chat selectors, thinking levels
-run.json (optional, next to the copied scripts)  override prompt / site subset / wait limits
-skill/scripts/ego_*_example.mjs portable round/batch templates
-skill/scripts/ensure_proxy.py  optional proxy check
+skill/SKILL.md                    single search() API, results, site selection
+skill/scripts/search.mjs          the only entry point: search({ prompt, sites?, ... })
+skill/scripts/engine.mjs          generic browser engine (CF, toggles, send, wait, extract)
+skill/scripts/ego_ask_lib.mjs     backward-compat re-export of engine.mjs
+skill/scripts/sites/<id>.mjs      one config file per AI site (URL, priority, controls)
+skill/scripts/sites/index.mjs     site registry and call priority
+skill/scripts/ego_*_example.mjs   back-compat wrappers around search()
+skill/scripts/ensure_proxy.py     optional proxy check
+skill/references/sites.md         per-site controls and pitfalls (deep dive)
+skill/references/ego-lite.md      ego lite backend details (deep dive)
 ```
 
 ## Install from GitHub
@@ -81,16 +83,17 @@ MIT
 
 ## Change the question or select sites
 
-The `ego-browser nodejs` runtime does **not** inherit shell environment variables. Copy the example scripts together with `ego_ask_lib.mjs` and `ego_sites.json` into a working directory, then put a `run.json` next to them:
+The `ego-browser nodejs` runtime does **not** inherit shell environment variables, so write a small task file (UTF-8 `.mjs`) in a writable directory and import the single API:
 
-```json
-{
-  "prompt": "Ask anything that needs a web search here",
-  "sites": ["perplexity", "chatgpt"],
-  "outDir": "web-ai-search-runs",
-  "waitMs": 90000,
-  "stableMs": 2500
-}
+```js
+import { search } from 'file:///C:/Users/<you>/.agents/skills/web-ai-search/scripts/search.mjs';
+
+await search({
+  prompt: 'Ask anything that needs a web search here',
+  // sites: 'all',                  // default: top 3 (perplexity, chatgpt, gemini)
+  // sites: ['perplexity','claude'],
+  // outDir: 'd:/your/runs', waitMs: 90000, stableMs: 2500,
+});
 ```
 
-Omit `sites` to run all sites (acceptance/benchmark use only; daily use should call the top 1-3). Every result contains `durationMs`, `status`, `webAction` and `webEvidence`. Prefer `webEvidence` plus the answer text over `webAction` when deciding whether a site really searched the web.
+Then run `ego-browser nodejs -e "await import('file:///<task file path>')"`. Results land in `outDir/answers.json` and `outDir/summary.json`; stdout prints a compact summary. Every result contains `durationMs`, `status`, `webAction` and `webEvidence`. Prefer `webEvidence` plus the answer text over `webAction` when deciding whether a site really searched the web.

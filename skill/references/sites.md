@@ -1,6 +1,6 @@
 # 站点清单与专属注意事项
 
-站点 URL 以 `scripts/ego_sites.json` 为准（顺序即调用优先级）。下表是控件与坑的速查，DOM 改版时以当次诊断为准。
+站点 URL 与行为以 `scripts/sites/<id>.mjs` 为准，`scripts/sites/index.mjs` 的数组顺序即调用优先级。下表是控件与坑的速查，DOM 改版时以当次诊断为准。
 
 | 站点 | URL | 新会话 | 联网 / 档位 | 抓取与注意 |
 | --- | --- | --- | --- | --- |
@@ -9,14 +9,14 @@
 | Gemini | `https://gemini.google.com/app` | URL 直达 | 工具按钮 | 页脚/订阅 UI 可能混入，按尾部标记截断 |
 | Grok | `https://grok.com/` | 首页即新会话 | 自动实时检索 | 首访可能有 CF 挑战，真点复选框；若确实遇到挑战则改为串行，已通过后可随批量模板并发 |
 | Muse | `https://muse.ai/` | 侧栏「新旁聊」（异步渲染，需等待按钮出现） | 联网能力未确认 | 输入框 `textarea[placeholder="消息"]`；侧栏「搜索」是站内搜索，别当联网开关 |
-| Claude | `https://claude.ai/new` | URL 直达 | 搜索网页 | 首次可能有 Cookie 同意菜单；答案含 Sources |
+| Claude | `https://claude.ai/new` | URL 直达 | 搜索网页 | 首次可能有 Cookie 同意菜单；答案含 Sources；英文流式占位 `Claude is responding` / `Searching the web` / `Write a message` 已纳入等待与 UI-only 检测，不会误判为已答 |
 | 豆包 | `https://www.doubao.com/chat/` | `[data-testid="create_conversation_button"]`（新对话，Ctrl+Shift+K） | 参考多篇资料 | 不要用 `create_office_task_button`（新工作任务，Ctrl+J）；点击被遮挡时 `focus()` 回退 |
 | Qwen | `https://chat.qwen.ai/` | 侧栏「新对话」 | 完成思考并附官方链接 | 尾部「自动生成」UI 需截断 |
 | DeepSeek | `https://chat.deepseek.com/` | 侧栏「新对话」 | 深度思考 + 联网 | 答案可能带完整思考链，抓取会剥离明确标注的思考段 |
 | 阶跃 AI | `https://www.stepfun.com/chats/new` | URL 直达 | composer「搜索」按钮 | 答案位于末尾输入框提示文本**之前**：`answerFrom=before-first` + `answerStartMarks`；等待可能超时但答案已生成 |
 | Z.ai | `https://zchat.z.ai/` | 首页直达 | `GLM-5.3-Flash` + 思考强度「低」 | 「思考强度」是滑块 `[data-slider-root]`，点最左端设低；高峰时段可能限流 |
 | 腾讯混元 | `https://aistudio.tencent.com/` | 侧栏新建会话 | 每次新会话都要点 `SPAN.online-tool-icon` 联网图标；档位 `No Think` | 不点联网会出现时间幻觉；联网工具会在答案前输出检索计划，按需截取结论 |
-| MiMo | `https://aistudio.xiaomimimo.com/#/` | 门户里点「新对话」 | 默认联网，无开关 | 门户无输入框，配置已用 `freshClick` 点「新对话」，真实点击被拦截时用 DOM click；默认联网，个别档位可能给推断式答案，如实标注 |
+| MiMo | `https://aistudio.xiaomimimo.com/#/` | 门户里点「新对话」 | 默认联网，无开关 | 落地页可能是**营销门户**（无输入框），`ask()` 会先按 `newChatText`（默认含「新对话」）真实点击入口进入 `#/ultra` 编辑器；若点「立即创建」会弹「温馨提示」同意框，优先走侧栏「新对话」绕开；默认联网，个别档位可能给推断式答案，如实标注 |
 | Kimi | `https://kimi.moonshot.cn/` | `?chat_enter_method=new_chat` | 菜单「联网搜索」；思考强度「标准」 | 偶发新会话未跳转（`blocked-no-answer`）或站点限流，重试一轮；抓取已用通用 UI 噪声过滤，`thinkLevel` 可覆盖为「进阶」 |
 
 ## 通用坑

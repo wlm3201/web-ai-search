@@ -1,55 +1,27 @@
-/* Minimal single-site round for the ego lite backend.
- *
- * IMPORTANT: ego-browser's nodejs runtime does NOT inherit shell environment
- * variables. Put overrides in `run.json` next to this file (or edit the
- * constants below). `run.json` may contain:
- *   { "prompt": "...", "sites": ["perplexity"], "outDir": "...",
- *     "task": "...", "waitMs": 90000, "stableMs": 2500, "lib": "file:///..." }
- *
- * The library is resolved relative to this file by default, so copying this
- * script together with ego_ask_lib.mjs into a goal directory works.
+/* Back-compat single-site example. New code:
+ *   import { search } from 'file:///<SKILL>/scripts/search.mjs';
+ *   await search({ prompt: '...', sites: ['perplexity'] });
+ * This wrapper honours run.json next to it.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
+import { search } from './search.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const load = async (name) => {
-  try {
-    const raw = await readFile(path.join(here, name), 'utf8');
-    return JSON.parse(raw.replace(/^\uFEFF/, ''));
-  } catch { return {}; }
-};
-const cfg = await load('ego_sites.json');
-const run = await load('run.json');
-const libUrl = run.lib || new URL('./ego_ask_lib.mjs', import.meta.url).href;
-const { ask, save, setPrompt, setOutDir } = await import(libUrl);
+let run = {};
+try {
+  run = JSON.parse((await readFile(path.join(here, 'run.json'), 'utf8')).replace(/^\uFEFF/, ''));
+} catch (_) { }
 
-const PROMPT = run.prompt || cfg.prompt;
-const GOAL = run.outDir || 'web-ai-search-runs';
-const TASK = run.task || 'web-ai-search-single';
-const wanted = (run.sites && run.sites[0]) || cfg.sites[0].id;
-const base = cfg.sites.find(s => s.id === wanted) || cfg.sites[0];
-const site = { ...base };
-if (run.waitMs) site.waitMs = run.waitMs;
-if (run.stableMs) site.stableMs = run.stableMs;
+const DEFAULT_PROMPT = '请联网搜索：所用编程语言的最新稳定版本是什么？请给出官方来源链接，并写出一条安装命令。';
+const firstSite = (run.sites && run.sites[0]) || 'perplexity';
 
-setOutDir(GOAL);
-setPrompt(PROMPT);
-
-const task = await taskSpace(TASK);
-console.log({ spaceId: task.spaceId, taskName: TASK, site: site.id });
-const page = task.page('p1');
-const result = await ask(page, site);
-await save('round-single', [result]);
-
-console.log(JSON.stringify({
-  site: result.site, status: result.status, durationMs: result.durationMs,
-  wait: result.waitStatus, chars: result.answer && result.answer.chars,
-  webAction: result.webAction, webEvidence: result.webEvidence,
-  answerHead: ((result.answer && result.answer.text) || '').slice(0, 180),
-  error: result.error,
-}, null, 2));
-
-// Results are already on disk: finishing is safe even when this site failed.
-await task.finish({ keep: [] });
+await search({
+  prompt: run.prompt || DEFAULT_PROMPT,
+  sites: [firstSite],
+  outDir: run.outDir,
+  task: run.task,
+  waitMs: run.waitMs,
+  stableMs: run.stableMs,
+});
